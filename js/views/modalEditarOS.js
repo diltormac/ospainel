@@ -8,7 +8,7 @@ import {
   formatarMoeda,
   toast,
 } from "../utils.js";
-import { fecharCamadaPorId } from "./_helpers.js";
+import { fecharCamadaPorId } from "./helpers.js";
 import { compartilharTexto } from "../compartilhamento.js";
 
 let fotografiaFormulario = "";
@@ -98,10 +98,13 @@ export function abrirDetalhes(id) {
 
   // Rascunho independente: cancelar não altera a OS nem o faturamento.
   setItensRascunho(
-    (Array.isArray(os.itens_servicos) ? os.itens_servicos : []).map((i) => ({ ...i })),
+    (Array.isArray(os.itens_servicos) ? os.itens_servicos : []).map((i) => ({
+      ...i,
+    })),
   );
 
-  document.getElementById("modalTitle").textContent = `Editar OS ${numeroExibicao(os)}`;
+  document.getElementById("modalTitle").textContent =
+    `Editar OS ${numeroExibicao(os)}`;
 
   const aparelhoDiscreto = os.aparelho
     ? `<span class="ml-2 bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded border border-slate-200"><i class="fa-solid fa-mobile-screen mr-1" aria-hidden="true"></i>${esc(os.aparelho)}</span>`
@@ -224,7 +227,8 @@ export function abrirDetalhes(id) {
 
 export function fecharModal({ forcar = false } = {}) {
   if (!forcar && formularioAlterado()) {
-    if (!confirm("Há alterações não salvas nesta OS. Fechar e descartar?")) return;
+    if (!confirm("Há alterações não salvas nesta OS. Fechar e descartar?"))
+      return;
   }
   document.getElementById("modalDetalhes").classList.remove("show");
   fotografiaFormulario = "";

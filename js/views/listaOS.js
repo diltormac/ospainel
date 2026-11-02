@@ -8,13 +8,13 @@ import {
   badge,
   urlSegura,
 } from "../utils.js";
-import { imgFoto } from "./_helpers.js";
+import { imgFoto } from "./helpers.js";
 import {
   estadoHTML,
   estadoCarregando,
   estadoErro,
   semDadosPorCarregamento,
-} from "./_estados.js";
+} from "./estados.js";
 
 function definirEstadoListaOS(html) {
   const empty = document.getElementById("emptyState");

@@ -7,13 +7,13 @@ import {
   numeroExibicao,
   urlSegura,
 } from "../utils.js";
-import { imgFoto } from "./_helpers.js";
+import { imgFoto } from "./helpers.js";
 import {
   estadoHTML,
   estadoCarregando,
   estadoErro,
   semDadosPorCarregamento,
-} from "./_estados.js";
+} from "./estados.js";
 
 function contarStatus(status) {
   return listaOS.filter((o) => o.status === status).length;

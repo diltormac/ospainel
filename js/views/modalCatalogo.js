@@ -1,6 +1,9 @@
 import { esc, formatarMoeda, lerValor, normalizar, toast } from "../utils.js";
-import { obterCatalogoServicos, salvarCatalogoServicos } from "../catalogoStore.js";
-import { fecharCamadaPorId } from "./_helpers.js";
+import {
+  obterCatalogoServicos,
+  salvarCatalogoServicos,
+} from "../catalogoStore.js";
+import { fecharCamadaPorId } from "./helpers.js";
 import { atualizarOpcoesSeletorServico } from "./modalAdicionarItem.js";
 import { formatarValorCampo } from "./modalEditarOS.js";
 
@@ -65,10 +68,12 @@ export function modalGerenciarCatalogo() {
     if (e.target === divGerenciar) fechar();
   });
   divGerenciar.querySelector('[data-acao="fechar"]').onclick = fechar;
-  divGerenciar.querySelector("#formNovoServico").addEventListener("submit", (e) => {
-    e.preventDefault();
-    adicionarServicoCatalogo();
-  });
+  divGerenciar
+    .querySelector("#formNovoServico")
+    .addEventListener("submit", (e) => {
+      e.preventDefault();
+      adicionarServicoCatalogo();
+    });
   document.body.appendChild(divGerenciar);
   divGerenciar.querySelector("#novoCatNome").focus();
 }

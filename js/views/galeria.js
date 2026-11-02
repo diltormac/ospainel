@@ -5,7 +5,7 @@ import {
   estadoCarregando,
   estadoErro,
   semDadosPorCarregamento,
-} from "./_estados.js";
+} from "./estados.js";
 
 export function renderGaleria() {
   const todasFotos = [];
