@@ -8,26 +8,68 @@
  */
 
 /**
- * Compartilha um texto usando a melhor estratégia disponível no ambiente.
+ * Baixa uma URL de imagem e devolve um File pronto para navigator.share.
+ * Retorna null se não for possível (rede, CORS, tipo inválido).
+ */
+async function baixarComoArquivo(url, nomeArquivo = "os.jpg") {
+  try {
+    const resposta = await fetch(url, { mode: "cors" });
+    if (!resposta.ok) return null;
+    const blob = await resposta.blob();
+    if (!blob || !blob.size) return null;
+    const tipo = blob.type && blob.type.startsWith("image/")
+      ? blob.type
+      : "image/jpeg";
+    const extensao = tipo.split("/")[1] || "jpg";
+    const nome = nomeArquivo.replace(/\.[^.]+$/, "") + "." + extensao;
+    return new File([blob], nome, { type: tipo });
+  } catch (e) {
+    console.warn("Não foi possível baixar a foto para compartilhar.", e);
+    return null;
+  }
+}
+
+/**
+ * Compartilha um texto (e opcionalmente uma foto) usando a melhor
+ * estratégia disponível no ambiente.
  *
  * Ordem de tentativa:
- *   1. navigator.share()          — menu nativo (Android, iOS, navegadores modernos)
- *   2. navigator.clipboard.writeText() — copia para a área de transferência (Electron, desktop)
- *   3. window.prompt()            — último recurso, permite cópia manual
+ *   1. navigator.share() com files (quando suportado) — Android, iOS, navegadores modernos
+ *   2. navigator.share() só com texto
+ *   3. navigator.clipboard.writeText() — copia para a área de transferência (Electron, desktop)
+ *   4. window.prompt() — último recurso, permite cópia manual
  *
- * @param {{ titulo?: string, texto: string }} opcoes
+ * @param {{ titulo?: string, texto: string, fotoUrl?: string }} opcoes
  * @returns {Promise<{ status: "compartilhado" | "copiado" | "cancelado" | "manual" | "erro", erro?: unknown }>}
  */
-export async function compartilharTexto({ titulo = "", texto = "" } = {}) {
+export async function compartilharTexto({ titulo = "", texto = "", fotoUrl = "" } = {}) {
   const conteudo = String(texto ?? "");
 
-  // 1) Menu nativo de compartilhamento.
+  // 1) Menu nativo de compartilhamento (com foto, se possível).
   if (
     typeof navigator !== "undefined" &&
     typeof navigator.share === "function"
   ) {
+    let arquivo = null;
+    if (fotoUrl) {
+      arquivo = await baixarComoArquivo(fotoUrl);
+    }
+
+    const podeCompartilharArquivo =
+      arquivo &&
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({ files: [arquivo] });
+
     try {
-      await navigator.share({ title: titulo, text: conteudo });
+      if (podeCompartilharArquivo) {
+        await navigator.share({
+          title: titulo,
+          text: conteudo,
+          files: [arquivo],
+        });
+      } else {
+        await navigator.share({ title: titulo, text: conteudo });
+      }
       return { status: "compartilhado" };
     } catch (e) {
       // Usuário cancelou o menu nativo — não é erro.
