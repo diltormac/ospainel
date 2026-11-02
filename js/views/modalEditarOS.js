@@ -6,6 +6,7 @@ import {
   ehConsertoOuSolda,
   formatarData,
   formatarMoeda,
+  lerValor,
   toast,
 } from "../utils.js";
 import { fecharCamadaPorId } from "./helpers.js";
@@ -34,18 +35,21 @@ export function recalcularValorDoRascunho() {
 
 function itemHTML(item, idx) {
   return `
-    <div class="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs">
-      <div class="min-w-0">
-        <span class="font-bold text-slate-800 break-words">${esc(item.servico) || "Serviço sem nome"}</span>
-        <span class="text-slate-500 ml-2 whitespace-nowrap">Qtd: ${esc(item.quantidade ?? 1)}</span>
+    <div class="grid grid-cols-[1fr_60px_100px_40px] gap-3 items-center bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs">
+      <div class="min-w-0 break-words">
+        <span class="font-bold text-slate-800">${esc(item.servico) || "Serviço sem nome"}</span>
         ${item.cor ? `<span class="ml-2 text-indigo-600 font-medium">Cor: ${esc(item.cor)}</span>` : ""}
       </div>
-      <div class="flex items-center gap-3 flex-shrink-0">
-        <span class="font-bold text-emerald-600 tabular-nums">${formatarMoeda(item.valor)}</span>
-        <button type="button" onclick="modalRemoverItem(0, ${idx})" class="text-red-500 hover:text-red-700 p-1" title="Excluir este item" aria-label="Excluir ${esc(item.servico)}">
-          <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+      <span class="text-center text-slate-500 whitespace-nowrap">${esc(item.quantidade ?? 1)}</span>
+      <div class="flex items-center justify-end gap-1">
+        <span class="font-bold text-emerald-600 tabular-nums whitespace-nowrap">${formatarMoeda(item.valor)}</span>
+        <button type="button" onclick="modalEditarValorItem(${idx})" class="text-indigo-600 hover:text-indigo-800 p-1" title="Editar valor" aria-label="Editar valor de ${esc(item.servico)}">
+          <i class="fa-solid fa-pen" aria-hidden="true"></i>
         </button>
       </div>
+      <button type="button" onclick="modalRemoverItem(0, ${idx})" class="text-red-500 hover:text-red-700 p-1 justify-self-center" title="Excluir este item" aria-label="Excluir ${esc(item.servico)}">
+        <i class="fa-solid fa-trash-can" aria-hidden="true"></i>
+      </button>
     </div>`;
 }
 
@@ -53,9 +57,20 @@ export function atualizarHTMLItensModal() {
   const container = document.getElementById("modalItensContainer");
   if (!container) return;
 
-  container.innerHTML = itensRascunho.length
-    ? itensRascunho.map(itemHTML).join("")
-    : `<p class="text-xs text-slate-500 italic">Nenhum item detalhado.</p>`;
+  if (!itensRascunho.length) {
+    container.innerHTML = `<p class="text-xs text-slate-500 italic">Nenhum item detalhado.</p>`;
+    return;
+  }
+
+  const cabecalho = `
+    <div class="grid grid-cols-[1fr_60px_100px_40px] gap-3 items-center px-2.5 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+      <span>Serviço</span>
+      <span class="text-center">Qtd</span>
+      <span class="text-right">Valor</span>
+      <span class="text-center">Ação</span>
+    </div>`;
+
+  container.innerHTML = cabecalho + itensRascunho.map(itemHTML).join("");
 }
 
 export function modalRemoverItem(_osId, index) {
@@ -64,6 +79,74 @@ export function modalRemoverItem(_osId, index) {
   setItensRascunho(itensRascunho.filter((_, i) => i !== index));
   recalcularValorDoRascunho();
   atualizarHTMLItensModal();
+}
+
+export function modalEditarValorItem(index) {
+  fecharCamadaPorId("modalEditarValorItem");
+  const item = itensRascunho[index];
+  if (!item) {
+    toast("Este item não existe mais. Reabra a OS.", "error");
+    return;
+  }
+
+  const divEditar = document.createElement("div");
+  divEditar.id = "modalEditarValorItem";
+  divEditar.className =
+    "camada-modal fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4";
+  divEditar.innerHTML = `
+    <form class="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4" role="dialog" aria-modal="true" aria-labelledby="tituloEditarValorItem" novalidate>
+      <h3 id="tituloEditarValorItem" class="font-bold text-slate-800 text-base flex items-center justify-between">
+        <span><i class="fa-solid fa-pen mr-2 text-indigo-600" aria-hidden="true"></i>Editar Valor do Serviço</span>
+        <button type="button" data-acao="fechar" class="text-slate-400 hover:text-slate-600 w-8 h-8 inline-flex items-center justify-center rounded-lg" aria-label="Fechar"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+      </h3>
+
+      <p class="text-xs text-slate-500 truncate" title="${esc(item.servico) || "Serviço sem nome"}">${esc(item.servico) || "Serviço sem nome"}</p>
+
+      <div>
+        <label for="editValorItem" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Valor (R$)</label>
+        <input type="text" inputmode="decimal" id="editValorItem" class="edit-input text-xs font-bold text-emerald-600" value="${esc(formatarValorCampo(item.valor))}" />
+      </div>
+
+      <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+        <button type="button" data-acao="cancelar" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition">Cancelar</button>
+        <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition shadow-sm">Salvar Alterações</button>
+      </div>
+    </form>
+  `;
+  document.body.appendChild(divEditar);
+
+  const form = divEditar.querySelector("form");
+  const inputValor = divEditar.querySelector("#editValorItem");
+  const fechar = () => divEditar.remove();
+  divEditar.fecharCamada = fechar;
+
+  divEditar.addEventListener("click", (e) => {
+    if (e.target === divEditar) fechar();
+  });
+  divEditar.querySelector('[data-acao="fechar"]').onclick = fechar;
+  divEditar.querySelector('[data-acao="cancelar"]').onclick = fechar;
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const novoValor = lerValor(inputValor.value);
+    if (novoValor === null || novoValor < 0) {
+      toast("Valor inválido. Use apenas números, ex: 80,00.", "error");
+      inputValor.focus();
+      return;
+    }
+
+    const atualizado = itensRascunho.map((i, idx) =>
+      idx === index ? { ...i, valor: novoValor } : i,
+    );
+    setItensRascunho(atualizado);
+    recalcularValorDoRascunho();
+    atualizarHTMLItensModal();
+    fechar();
+    toast("Valor atualizado!");
+  });
+
+  inputValor.focus();
+  inputValor.select();
 }
 
 function lerFormulario() {
@@ -244,26 +327,19 @@ export async function compartilharOS(osId) {
     return;
   }
 
-  // Monta o texto com os dados da OS (sem exigir telefone).
-  const linhas = [`OS: ${numeroExibicao(os)}`];
+  // Texto compartilhado: apenas nome do cliente e observação.
+  const linhas = [];
   if (os.nome) linhas.push(`Cliente: ${os.nome}`);
-  if (os.telefone) linhas.push(`Telefone: ${os.telefone}`);
-
-  const servicos =
-    Array.isArray(os.itens_servicos) && os.itens_servicos.length
-      ? os.itens_servicos
-          .map((i) => i.servico)
-          .filter(Boolean)
-          .join(", ")
-      : os.servico;
-  if (servicos) linhas.push(`Serviços: ${servicos}`);
-  linhas.push(`Valor: ${formatarMoeda(os.valor)}`);
-  if (os.observacao) linhas.push(`Observação: ${os.observacao}`);
+  if (os.observacao) linhas.push(`Observações: ${os.observacao}`);
 
   const texto = linhas.join("\n");
   const titulo = `OS ${numeroExibicao(os)}`;
 
-  const resultado = await compartilharTexto({ titulo, texto });
+  // Primeira foto válida da OS (URL pública do bucket). Se não houver,
+  // compartilha apenas o texto.
+  const fotoUrl = (os.fotos_urls || []).find((u) => urlSegura(u)) || "";
+
+  const resultado = await compartilharTexto({ titulo, texto, fotoUrl });
 
   if (resultado.status === "copiado") {
     toast("Texto da OS copiado. Cole no app desejado.");
