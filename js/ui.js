@@ -21,7 +21,7 @@ export * from "./views/galeria.js";
 export * from "./views/lightbox.js";
 export * from "./views/sidebar.js";
 export * from "./views/faturamento.js";
-export * from "./views/_helpers.js";
+export * from "./views/helpers.js";
 export * from "./views/_estados.js";
 export * from "./views/modalCatalogo.js";
 export * from "./views/modalAdicionarItem.js";
